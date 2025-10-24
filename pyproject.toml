@@ -1,0 +1,45 @@
+[project]
+name = "convonet"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "keras>=3.11.3",
+    "matplotlib>=3.10.7",
+    "numpy>=2.3.4",
+    "pandas>=2.3.3",
+    "pyside6>=6.10.0",
+    "scikeras>=0.13.0",
+    "scikit-learn>=1.7.2",
+    "seaborn>=0.13.2",
+    "torch>=2.8.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
+    "pytest-qt>=4.5.0",
+]
+
+[[tool.uv.index]]
+url = "https://pypi.org/simple"
+default = true
+
+[tool.setuptools.package-dir]
+"" = "."
+"src" = "src"
+"src.cnnpy" = "src/cnnpy"
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "src",
+  "src/cnnpy",
+  "src/cnnpy/appctrl",
+  "src/cnnpy/thenet",
+  "src/cnnpy/theprep"
+]
+
+[build-system]
+requires = ["setuptools>=80.9.0"]
+build-backend = "setuptools.build_meta"
