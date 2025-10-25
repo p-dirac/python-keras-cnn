@@ -1,10 +1,11 @@
 #
-For project description, read Python-Keras-CNN.pdf in docs folder.
+For project description, read Python-Keras-CNN.pdf in docs folder, and 
+download the datasets.
 Follow these instructions for cloning a git repository that was built 
 using the Astral uv Python package manager.
 
-1. Open windows command prompt, and go to directory to install the clone
-C:\'clone path'>
+1. Open windows command prompt, and go to directory to install the clone (referred to as 'convonet' in the documentation)
+cd <clone path>
 
 2. Install uv, and add uv path in system environment:
 pip install uv
@@ -13,7 +14,7 @@ pip install uv
 git clone <repository_url>
 
 4. Change directory to cloned project:
-cd <cloned path>/convonet
+cd <cloned path>
 
 5. Create new virtual environment(.venv) for the cloned project 
 based on pyproject.toml and uv.lock files. All dependencies will

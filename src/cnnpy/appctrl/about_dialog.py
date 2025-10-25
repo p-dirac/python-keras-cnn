@@ -55,16 +55,22 @@ class AboutDialog(QDialog):
         #
         self.prep2 = QLineEdit()
         self.prep2.setFont(self.font)
-        gpu = torch.cuda.current_device()
-        gpu_name = torch.cuda.get_device_name(gpu)
-        self.prep2.setText(gpu_name)
-        layout.addRow("GPU name:", self.prep2)
+        device = torch.get_default_device()
+        if(device == 'cuda'):
+            gpu = torch.cuda.current_device()
+            dev_name = torch.cuda.get_device_name(gpu)
+            num_devs = torch.cuda.device_count()
+        else:
+            dev_name = device
+            num_devs= torch.get_num_threads()
+        #
+        self.prep2.setText(dev_name)
+        layout.addRow("Torch device name:", self.prep2)
         #
         self.prep3 = QLineEdit()
         self.prep3.setFont(self.font)
-        num_gpus = torch.cuda.device_count()
-        self.prep3.setText(str(num_gpus))
-        layout.addRow("Number of GPUs:", self.prep3)
+        self.prep3.setText(str(num_devs))
+        layout.addRow("Number of torch devices:", self.prep3)
         #
         self.prep4 = QLineEdit()
         self.prep4.setFont(self.font)
