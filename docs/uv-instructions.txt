@@ -4,14 +4,15 @@ download the datasets.
 Follow these instructions for cloning a git repository that was built 
 using the Astral uv Python package manager.
 
-1. Open windows command prompt, and go to directory to install the clone (referred to as 'convonet' in the documentation)
+1. Open windows command prompt, and go to directory to install the clone
+(referred to as 'convonet' in the documentation)
 cd <clone path>
 
-2. Install uv, and add uv path in system environment:
+2. Install uv, and add uv path in windows system environment:
 pip install uv
 
 3. Clone the desired repository:
-git clone <repository_url>
+git clone https://github.com/p-dirac/python-keras-cnn
 
 4. Change directory to cloned project:
 cd <cloned path>
@@ -35,4 +36,4 @@ run the batch file:
 uv-py-to-exe.bat
 
 10. To run the windows exe file, from convonet directory
-dist/app.exe
+"dist/app.exe"
