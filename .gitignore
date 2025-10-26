@@ -1,0 +1,6 @@
+# Ignore 
+.pytest_cache
+.venv
+.vscode
+build
+dist

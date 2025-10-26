@@ -1,0 +1,8 @@
+2025-10-26 15:31:04 - INFO - [app.py:201 - createAppMenu()] App createAppMenu
+2025-10-26 15:31:04 - INFO - [app.py:278 - createTaskMenu()] App createTaskMenu
+2025-10-26 15:31:11 - INFO - [data_params.py:210 - loadParams()] Data Params loaded
+2025-10-26 15:31:21 - INFO - [dataprep.py:278 - runTask()] DataPrep, prepData begin
+2025-10-26 15:31:22 - INFO - [dataprep.py:284 - runTask()] DataPrep, prepData finished
+2025-10-26 15:32:05 - INFO - [hyper_params.py:286 - loadParams()] Hyper Params loaded
+2025-10-26 15:32:12 - INFO - [dataprep.py:278 - runTask()] DataPrep, prepData begin
+2025-10-26 15:32:24 - INFO - [dataprep.py:284 - runTask()] DataPrep, prepData finished
