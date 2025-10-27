@@ -1,6 +1,7 @@
 #
 import os
 from pathlib import Path
+import tomllib
 import logging
 logger = logging.getLogger()
 #
@@ -30,6 +31,25 @@ class Util():
         msg,
         buttons = QMessageBox.Ok,
         defaultButton=QMessageBox.Ok,)
+
+    @staticmethod
+    def appVersion():
+        version = "unknown"
+        # path to pyproject.toml
+        cwd = Path.cwd()
+        #  assumes current working directory is where .toml file is located
+        toml_file = os.path.join(cwd, "pyproject.toml")
+        #print("toml_file:", toml_file) 
+        full = Path(toml_file)
+        if full.exists() and full.is_file():
+            with open(full, "rb") as f:
+                # data is dict object
+                data = tomllib.load(f)
+                #print("data:", data) 
+                # check project.version
+                if "project" in data and "version" in data["project"]:
+                    version = data["project"]["version"]
+        return version       
 
     @staticmethod
     def openFileDialog(title: str, filters: list, dir: str):

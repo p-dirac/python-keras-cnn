@@ -5,6 +5,12 @@ from sklearn.metrics import confusion_matrix
 import numpy as np
 from numpy import argmax
 #
+import sys
+from io import StringIO
+from contextlib import redirect_stdout
+#
+
+#
 import logging
 logger = logging.getLogger()
 
@@ -13,7 +19,7 @@ logger = logging.getLogger()
 class NetTesting:
 
     def __init__(self):
-        pass
+        self.mystdout = StringIO()
 
     def evaluate(self, model, x_test, y_test):
         """Evaulate network model accuracy based on test data 
@@ -32,16 +38,20 @@ class NetTesting:
         """
 
         try:
+            # redirect stdout to memory string
+            old_stdout = sys.stdout
             #
-            # evaluate the model
-            # loss value & metrics values for the model in test mode
-            val_loss, val_accuracy = model.evaluate(x_test, y_test)
-            #print(f"Validation Accuracy: {val_accuracy * 100:.2f}%")
-
+            with redirect_stdout(self.mystdout):
+                # evaluate the model
+                # loss value & metrics values for the model in test mode
+                val_loss, val_accuracy = model.evaluate(x_test, y_test)
+                #print(f"Validation Accuracy: {val_accuracy * 100:.2f}%")
         except Exception:
-            logger.error("Error in show_samples")
-            raise Exception("Error in show_samples") 
-        else:    
+            logger.error("Error in evaluate")
+            raise Exception("Error in evaluate") 
+        finally:
+            # restore original stdout
+            sys.stdout = old_stdout
             return val_loss, val_accuracy
 
     def predict(self, model, x_test, y_test):
@@ -58,17 +68,29 @@ class NetTesting:
             confusion matrix (ndarray) : true values versus predicted values, with shape (n_classes by n_classes)
         """
         try:
+            # redirect stdout to memory string
+            old_stdout = sys.stdout
             #
-           # y_test_max=np.argmax(y_test, axis=0)
-            y_pred = np.argmax(model.predict(x_test), axis=1)
-            print("predict, x_test shape: ", x_test.shape)
-            print("predict, y_pred shape: ", y_pred.shape)
-            #
-            cm = confusion_matrix(y_test, y_pred)
-            print("predict, cm shape: ", cm.shape)
+            with redirect_stdout(self.mystdout):    
+                #print("predict, x_test shape: ", x_test.shape)
+                #  x_test.shape e.g. (10000, 28, 28, 1) for 10000 images
+                pred = model.predict(x_test)
+                # pred shape e.g. (10000, 10) for 10000 samples (rows) and 10 classes (cols)
+                # argmax, for axis=1, returns max element in each row
+                # y_pred shape, e.g. (10000,) array of predicted values (0 to 9)
+                y_pred = np.argmax(pred, axis=1)
+                #print("predict, y_pred shape: ", y_pred.shape)
+                #
+                # print("predict, y_test shape: ", y_test.shape)
+                # y_test.shape, e.g. (10000,) array of true values (0 to 9)
+                # cm shape e.g. (10,10) counts for each pair of true vs predicted values
+                cm = confusion_matrix(y_test, y_pred)
+                #print("predict, cm shape: ", cm.shape)
         except Exception as e:
             logger.error("Error in predict")
             print(f"Error in predict: {e}")
             raise Exception("Error in predict") 
-        else:    
+        finally:
+            # restore original stdout
+            sys.stdout = old_stdout
             return cm

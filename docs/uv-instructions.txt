@@ -29,6 +29,7 @@ the docs folder.
 call .venv\Scripts\activate
 
 8. Run the application with Python, from convonet directory
+(may take a couple minutes to open):
 python src/cnnpy/app.py
 
 9. To create a windows exe file in the dist directory,

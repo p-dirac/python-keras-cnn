@@ -9,6 +9,7 @@ os.environ["QT_SCALE_FACTOR"] = "1"
 # can help prevent fragmentation on GPU
 os.environ["PYTORCH_ALLOC_CONF"] = "max_split_size_mb:512"
 from pathlib import Path
+
 import logging
 logger = logging.getLogger()
 #
@@ -75,6 +76,9 @@ class AppWin(QMainWindow):
         self.setFixedSize(w, h)
         # To allow resizing
         self.setFixedSize(AppWin.QWIDGETSIZE_MAX, AppWin.QWIDGETSIZE_MAX) 
+        #
+        version = Util.appVersion()
+        print("app version:", version)        
         #
         # set gpu if available
         if torch.cuda.is_available():
@@ -249,6 +253,7 @@ class AppWin(QMainWindow):
         #
         loadModelAct = QAction("Load Network Model", self)
         appMenu.addAction(loadModelAct)
+        self.model_loaded = False
         # load a neural network model
         loadModelAct.triggered.connect(self.netModel.loadModel)
         #
@@ -351,7 +356,6 @@ class AppWin(QMainWindow):
 
     @Slot()
     def setStatus(self, msg: str):
-        #print("setStatus, msg: ", msg)
         self.status.showMessage(msg) 
 
     # Define a slot to handle the custom signal
@@ -359,7 +363,9 @@ class AppWin(QMainWindow):
     def updateHyper(self):
         self.params_loaded = True
         # enable loadHyperAct when data params are set
-        self.loadHyperAct.setEnabled(True)    
+        self.loadHyperAct.setEnabled(True)  
+        if(self.model_loaded):  
+            self.loadTestDataAct.setEnabled(True)
 
     # Define a slot to handle the custom signal
     @Slot()
@@ -399,6 +405,7 @@ class AppWin(QMainWindow):
     @Slot()
     def updateModelAct(self):
         # enable task QActions when training is completed or model is loaded
+        self.model_loaded = True
         self.saveModelAct.setEnabled(True)
         # if model is loaded, disable training
         self.trainingAct.setEnabled(False)
@@ -448,7 +455,9 @@ class AppWin(QMainWindow):
                 Util.clearChildren(self.centralWidget)
         # replace CentralWidget
         self.centralWidget = widget
-        self.setCentralWidget(widget)  
+        self.setCentralWidget(widget) 
+        # clear status 
+        self.status.clearMessage()
 
     def saveWidget(self):
         try:

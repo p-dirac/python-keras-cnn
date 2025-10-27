@@ -143,7 +143,7 @@ class TutorDialog(QDialog):
         return vlayout
 
     def addTab(self, name: str, prepLayout: QVBoxLayout):
-        prepTab = QWidget()
+        prepTab = QWidget(self.tabs)
         prepTab.setFont(self.font)
         prepTab.setLayout(prepLayout)
         self.tabs.addTab(prepTab, name)

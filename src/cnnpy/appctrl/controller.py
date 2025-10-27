@@ -2,6 +2,7 @@
 import os
 import logging
 logger = logging.getLogger()
+import time
 from PySide6 import QtCore
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
@@ -56,7 +57,6 @@ class Controller(QObject):
     trainingComplete = Signal()
     replaceLayout = Signal(QLayout)
     replaceWidget = Signal(QWidget)
-
 
     #
     OPTION_TRAINING = "training"
@@ -169,10 +169,10 @@ class Controller(QObject):
                 Util.alert("Training image directory not found: \n", data_dir)
                 return
         #
+        self.updateStatus.emit("Loading training datasets")
         dataPrep = DataPrep(self.params)
         # Pass dataPrep to thread task, and call dataPrep.runTask 
         # inside the thread. The runTask method will call prepData.
-        self.updateStatus.emit("Loading training datasets")
         dataBar = self.anyBar("Loading Training Datasets")
         self.datatask = DataTask(dataPrep, data_dir)
         self.datatask.setObjectName("Data Task") 
@@ -205,10 +205,10 @@ class Controller(QObject):
         if (not os.path.exists(data_dir)) :
                 Util.alert("Testing image directory not found: \n", data_dir)
                 return
-        dataPrep = DataPrep(self.params)
         #
-        self.updateStatus.emit("Loading testing datasets")
-        dataBar = self.anyBar("Loading Testing Datasets")
+        self.updateStatus.emit("Loading test datasets")
+        dataPrep = DataPrep(self.params)
+        dataBar = self.anyBar("Loading Test Datasets")
         self.datatask = DataTask(dataPrep, data_dir)
         self.datatask.setObjectName("Data Task") 
         #
@@ -240,7 +240,6 @@ class Controller(QObject):
             central.setLayout(data_layout)
             # add Plotter 
             plotter = Plotter()
-            print("plotter type:", type(plotter))
             data_layout.addWidget(plotter)
             #
             hbox = QWidget()
@@ -265,7 +264,7 @@ class Controller(QObject):
             print("features shape: ", features.shape)
             #
             if((labels is not None) and (features is not None)):
-                print("Controller.samples calling plotSamples") 
+                #print("Controller.samples calling plotSamples") 
                 plotter.plotSamples(labels, features)
                 #plotter.update()
                 self.updateStatus.emit("Samples plotted") 
@@ -577,7 +576,7 @@ class Controller(QObject):
                 Util.alert("Controller: model not set.")
                 return
 
-            print("netcontrol, y_train type: ", type(self.y_train))
+            #print("netcontrol, y_train type: ", type(self.y_train))
             print("netcontrol, x_train shape: ", self.x_train.shape)
             print("netcontrol, batch_size: ", self.batch_size)
             #
@@ -585,11 +584,10 @@ class Controller(QObject):
             self.clearKeras()
             #
             netTrain = NetTraining(self.model, self.x_train, self.y_train, self.epochs, self.batch_size)
-
-            netBar = self.anyBar("Neural Network running \n (May take several minutes)")
             #
             self.updateStatus.emit("Training underway")
 
+            netBar = self.anyBar("Neural Network running \n (May take several minutes)")
             #
             # pass netTrain to thread task, and call netTrain.train 
             # inside the thread
@@ -658,7 +656,7 @@ class Controller(QObject):
 
     def predict(self):
 
-        """Uses test dataset to predict results based on a trained network model
+        """Uses test dataset to predict results based on a trained network model (a Keras Sequential object)
 
         Results are displayed as the confusion matrix, which shows how many predicted labels matched the true labels.
 
@@ -677,14 +675,35 @@ class Controller(QObject):
                 Util.alert("NetModel is not set.")
                 return
 
+            # model is a Sequential
             self.model = self.netModel.getModel()
             if(self.model is None):
                 Util.alert("Model is not loaded or prepared.")
                 return
+            self.updateStatus.emit("Prediction underway")
+            #
             self.testing = NetTesting() 
             # clear out old models
             self.clearKeras()
             cm = self.testing.predict(self.model, self.x_test, self.y_test)
+
+            #
+            self.plotConfusion(cm)
+        except Exception as e:
+            print(f"predict raised an exception: {e}")
+            logger.error(f"predict raised an exception: {str(e)}")
+            raise Exception(f"Error in predict: {str(e)}") 
+
+
+    def plotConfusion(self, cm: ndarray):
+        """Plot confusion matrix for test dataset
+
+        Args:
+            cm(): confusion matrix
+        Raises:
+            Exception: if error
+        """        
+        try:
             #
             # note: Plotter is subclass of Qwidget
             plotter = Plotter()
@@ -726,6 +745,7 @@ class Controller(QObject):
             logger.error(f"predict raised an exception: {str(e)}")
             raise Exception(f"Error in predict: {str(e)}") 
 
+
     def evaluate(self):
 
         """Uses test dataset to evaluate overall scores based on a trained network model.
@@ -754,11 +774,27 @@ class Controller(QObject):
                 Util.alert("Model is not loaded or prepared.")
                 return
             #
+            self.updateStatus.emit("Evaluation underway")
             self.testing = NetTesting() 
             # clear out old models
             self.clearKeras()
             loss, accuracy = self.testing.evaluate(self.model, self.x_test, self.y_test)
             #
+            self.evalTable(accuracy, loss)
+
+        except Exception as e:
+            print(f"evaluate raised an exception: {e}")
+            logger.error(f"evaluate raised an exception: {str(e)}")
+            raise Exception(f"Error in evaluate: {str(e)}") 
+
+    def evalTable(self, accuracy: float, loss: float):
+        """Create small table to dislay overall accuracy and loss
+
+        Args:
+            accuracy (float): model accuracy
+            loss (float): model loss
+        """
+        try:
             central = QWidget()
             #
             # vertical layout for display
@@ -850,7 +886,6 @@ class Controller(QObject):
             logger.error(f"evaluate raised an exception: {str(e)}")
             raise Exception(f"Error in evaluate: {str(e)}") 
 
-
     def plotHistory(self, hist: dict):
         """Plot the epoch history of accuracy and loss, based on just training data, without any validation.
 
@@ -862,7 +897,7 @@ class Controller(QObject):
         # add plot to main window
         self.replaceWidget.emit(plotter)
         print("netcontrol, plot the history accuracy, loss")
-        plotter.plotHistory(self.model, hist)
+        plotter.plotHistory(hist)
 
     def plotHistoryVal(self, hist: History):
         """Plot the epoch history of accuracy and loss for both training data and validation data.
@@ -886,10 +921,10 @@ class Controller(QObject):
             features = self.datatask.features
             labels = self.datatask.labels
             print("datatask task_option:", task_option)
-            print("datatask before quit, is running?:", self.datatask.isRunning())
+            #print("datatask before quit, is running?:", self.datatask.isRunning())
             # thread finished
             self.datatask.quit()
-            print("datatask after quit, is running?:", self.datatask.isRunning())
+            #print("datatask after quit, is running?:", self.datatask.isRunning())
             if(not self.datatask.isRunning):
                 # clear thread memory
                 self.datatask.deleteLater()

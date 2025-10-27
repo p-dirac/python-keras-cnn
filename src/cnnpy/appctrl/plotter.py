@@ -23,9 +23,6 @@ class Plotter(FigureCanvas):
     def __init__(self, parent=None):
         self.fig = Figure()
         super().__init__(self.fig)
-        print("FigureCanvas type:", type(FigureCanvas))
-        print("plotter type:", type(self))
-        
 
     def plotSamples(self, y_train: np.ndarray, x_train: np.ndarray):
         """Show samples of a few training labels and features
@@ -41,8 +38,7 @@ class Plotter(FigureCanvas):
             str: if no error 
         """
         try:
-            print("fig type:", type(self.fig))
-            print("backend: ", matplotlib.get_backend())
+            #print("matplotlib backend: ", matplotlib.get_backend())
             self.fig.clear()
             # figsize: Width, height in inches.
             self.fig.set_size_inches(5, 4)
@@ -50,15 +46,13 @@ class Plotter(FigureCanvas):
             # display a few sample training images
             num_samples = 5  # per row
             # y_train should be ndarray
-            print("y_train type:", type(y_train))
             # x_train type should be ndarray
-            print("x_train type:", type(x_train))
             print("x_train shape:", x_train.shape)
             #
             # print a few cells
-            cells = x_train[1, 14, 1:, 0]
+            #cells = x_train[1, 14, 1:, 0]
             # verify normalized image cells
-            print("plotSamples, x_train cells:", cells)
+            #print("plotSamples, x_train cells:", cells)
             #
             base = 0
             # for two rows, select only 2*num_samples images from x_train
@@ -101,9 +95,9 @@ class Plotter(FigureCanvas):
                     #
             # Draw the canvas 
             # Note: use self to call draw, not ax
-            print("plotSamples, call draw")
+            #print("plotSamples, call draw")
             self.fig.canvas.draw()
-            print("plotSamples, end samples plot")
+            #print("plotSamples, end samples plot")
         except Exception as ex:
             print("Error in plotSamples, ex: ", ex)
             logger.error("Error in plotSamples, ex: ", ex)
@@ -232,7 +226,7 @@ class Plotter(FigureCanvas):
             # subplot at row k, col i (gs is zero based)
             ax = self.fig.add_subplot(gs[0, 0])
             #
-            print("plotHistory, begin accuracy plot")
+            #print("plotHistory, begin accuracy plot")
             #
             # 1st plot: accuracy
             ax.set_title('Training Accuracy', fontfamily='Arial', fontsize=16, fontweight='bold')
@@ -240,20 +234,19 @@ class Plotter(FigureCanvas):
             # where xe = epochs, yh = accuracy, label for legend
             # history dictionary contains two lists: accuracy, loss             
             yh = history['accuracy']
-            yp = [round(y*100,1) for y in yh]
-            s = len(yp)
+            yhp = [round(y*100,1) for y in yh]
             # number of epochs is length of accuracy list
-            s = len(yp)
+            s = len(yh)
             # epochs begin at 1
             xe = list(range(1,s+1))
-            ax.plot(xe, yp, linestyle='solid', label='train', linewidth=3)
+            ax.plot(xe, yhp, linestyle='solid', label='train', linewidth=3)
             ax.set_xlabel("Epoch", fontfamily='Arial', fontsize=14, fontweight='bold')
-            ax.set_ylabel("Accuracy", fontfamily='Arial', fontsize=14, fontweight='bold')
+            ax.set_ylabel("Accuracy %", fontfamily='Arial', fontsize=14, fontweight='bold')
             font_properties = font_manager.FontProperties(family='Arial', size=12, weight='bold')
             ax.legend(prop=font_properties)
-            print("plotHistory, end accuracy plot")
+            #print("plotHistory, end accuracy plot")
             #
-            print("plotHistory, begin loss plot")
+            #print("plotHistory, begin loss plot")
             #
             # subplot at row k, col i (gs is zero based)
             ax = self.fig.add_subplot(gs[0, 1])
@@ -275,7 +268,7 @@ class Plotter(FigureCanvas):
             # Draw the canvas; 
             # recall: self is subclass of FigureCanvas
             # Note: use self to call draw, not ax
-            print("plotHistory, end loss plot")
+            #print("plotHistory, end loss plot")
             self.fig.canvas.draw()
 
         except Exception:
@@ -312,7 +305,7 @@ class Plotter(FigureCanvas):
             # subplot at row k, col i (gs is zero based)
             ax = self.fig.add_subplot(gs[0, 0])
             #
-            print("plotHistory, begin accuracy plot")
+            #print("plotHistory, begin accuracy plot")
             #
             # 1st plot: accuracy
             ax.set_title("Training/Validation Accuracy", fontfamily='Arial', fontsize=16, fontweight='bold')
@@ -320,6 +313,8 @@ class Plotter(FigureCanvas):
             # history dictionary contains four lists: accuracy, val_accuracy, loss, val_loss 
             yh = history['accuracy']
             yv = history['val_accuracy']
+            yhp = [round(y*100,1) for y in yh]
+            yvp = [round(y*100,1) for y in yv]
             # number of epochs is length of accuracy list
             s = len(yh)
             # epochs begin at 1
@@ -328,15 +323,15 @@ class Plotter(FigureCanvas):
             #print("plotHistory, acc xe:", xe)
             #print("plotHistory, acc:", yh)
             #print("plotHistory, val acc:", yv)
-            ax.plot(xe, yh, linestyle='solid', label='Training Accuracy', linewidth=3)
-            ax.plot(xe, yv, linestyle='solid', label='Validation Accuracy', linewidth=3)
+            ax.plot(xe, yhp, linestyle='solid', label='Training Accuracy', linewidth=3)
+            ax.plot(xe, yvp, linestyle='solid', label='Validation Accuracy', linewidth=3)
             ax.set_xlabel("Epoch", fontfamily='Arial', fontsize=14, fontweight='bold')
-            ax.set_ylabel("Accuracy", fontfamily='Arial', fontsize=14, fontweight='bold')
+            ax.set_ylabel("Accuracy %", fontfamily='Arial', fontsize=14, fontweight='bold')
             font_properties = font_manager.FontProperties(family='Arial', size=12, weight='bold')
             ax.legend(prop=font_properties)
-            print("plotHistory, end accuracy plot")
+            #print("plotHistory, end accuracy plot")
             #
-            print("plotHistory, begin loss plot")
+            #print("plotHistory, begin loss plot")
             #
             # subplot at row k, col i (gs is zero based)
             ax = self.fig.add_subplot(gs[0, 1])
@@ -365,7 +360,7 @@ class Plotter(FigureCanvas):
             # Note: use self to call draw, not ax
             self.fig.canvas.draw()
             #self.draw()
-            print("plotHistory, end loss plot")
+            #print("plotHistory, end loss plot")
 
         except Exception as ex:
             print("Error in plotHistory, ex:", ex)
