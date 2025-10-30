@@ -274,12 +274,12 @@ class HyperParams(QObject):
     def hyperToNumeric(self, hype: dict):
         """From string format, convert text to numeric values
 
+        Update numeric hyper parameters
+
         Args:
            hype (str): hyper parameters in string format
-        Returns:
-            dict: hyper parameters with numeric values
         """        
-        hyper = {
+        self.hyper = {
         "init_rate" : self.csvToFloat(hype["init_rate"]),
         "decay_steps" : int(hype["decay_steps"]),
         "decay_rate" : float(hype["decay_rate"]),
@@ -291,7 +291,6 @@ class HyperParams(QObject):
         "epochs" : self.csvToInt(hype["epochs"]),
         "batch_size" : self.csvToInt(hype["batch_size"]) 
         }
-        return hyper
 
     def closeCentral(self):
         central = QWidget()

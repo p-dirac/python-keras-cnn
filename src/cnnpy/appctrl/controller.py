@@ -1262,7 +1262,9 @@ class Controller(QObject):
                 self.replaceLayout.emit(layout)  
             #
             # need to convert from string to numeric
-            self.hyper = self.hyperInstance.hyperToNumeric(bestHyper)      
+            # keep self.hyper in sync with hyperInstance
+            self.hyperInstance.hyperToNumeric(bestHyper)
+            self.hyper = self.hyperInstance.getHyper()      
 
         except Exception as e:
             print(f"tuneResults raised an exception: {e}")
