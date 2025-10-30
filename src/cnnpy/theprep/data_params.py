@@ -53,13 +53,15 @@ class DataParams(QObject):
         # note: square image sizes simplify input and computations 
         # image_size: width, height of each image in input dataset
         self.image_size = 2
+        self.result_dir = "../../Results/<cnn>"
         #
         self.font = QFont("Arial", 14, QFont.Weight.Bold)
         self.default_params = {
             "num_classes": 1,
             "train_dir": "C:\\Datasets\\<my_data>\\training",
             "test_dir": "C:\\Datasets\\<my_data>\\testing",
-            "image_size": 2
+            "image_size": 2,
+            "result_dir": "C:\\Results\\<cnn>"
         }
 
     def getParams(self):
@@ -130,6 +132,7 @@ class DataParams(QObject):
         tr = prep.get("train_dir")
         te = prep.get("test_dir")
         sz = prep.get("image_size")
+        rs = prep.get("result_dir")
         #print("num_classes: ", self.num_classes)
         #print("train_dir: ", tr)
         #print("test_dir: ", te)
@@ -163,6 +166,12 @@ class DataParams(QObject):
         self.prep4.setText(str(sz))
         layout.addRow("Image size:", self.prep4)
         #
+        self.prep5 = QLineEdit()
+        self.prep5.setFixedWidth(600)
+        self.prep5.setFont(self.font)
+        self.prep5.setText(rs)
+        layout.addRow("Results directory:", self.prep5)
+        #
         return layout
 
     def updateParams(self):
@@ -183,11 +192,13 @@ class DataParams(QObject):
         train_dir = self.prep2.text()
         test_dir = self.prep3.text()
         image_size = int(self.prep4.text())
+        result_dir = self.prep5.text()
         prep = {
             "num_classes" : num_classes,
             "train_dir" : train_dir,
             "test_dir" : test_dir,
-            "image_size" : image_size
+            "image_size" : image_size,
+            "result_dir": result_dir
         }
         #print("savePrep, prep: ", prep)
         return prep
@@ -198,16 +209,17 @@ class DataParams(QObject):
 
     def newParams(self):
         p = None
+        # will use default params
         self.paramsForm(p)
 
     def loadParams(self):
         p = self.readParams() 
         if(bool(p)):
             self.params = p
-            #print("loadParams: ", p)
+            print("data params loaded: ", p)
+            logger.info(f"data params loaded: {p}")
             self.paramsForm(p) 
             self.updateStatus.emit("Data Params loaded") 
-            logger.info("Data Params loaded")
 
     def readParams(self):
         """Read parameters from file
@@ -263,18 +275,17 @@ class DataParams(QObject):
         """
         try:
             #print("saveParamsCwd, params: ", self.params)
-            print("saveParamsCwd, data_file: ", self.data_file)
+            #print("saveParamsCwd, data_file: ", self.data_file)
             full_dir = os.path.join(Path.cwd(), DataParams.APP_INPUT_SUBDIR)
             full = Util.saveFileDialog(title="Save As .json:", filters=["JSON files (*.json);;All Files (*)"], dir=full_dir)
-            #full = os.path.join(full_dir, file_path)
-            print("saveParamsCwd, full: ", full)
+            print("saveParams, full: ", full)
             if full:
                 # open file for writing
                 with open(full, "w") as f:
                     #write params dict to file in json format
                     json.dump(self.params, f, indent=4)
                 self.updateStatus.emit("Data Params saved to file") 
-                logger.info("Data Params saved to file")
+                logger.info(f"Data Params saved to file: {full}")
             else:
                 # user canceled dialog without selecting a path
                 logger.error("No path selected, params not saved")

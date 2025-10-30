@@ -36,5 +36,5 @@ python src/cnnpy/app.py
 run the batch file:
 uv-py-to-exe.bat
 
-10. To run the windows exe file, from convonet directory
+10. To run the windows exe file, from convonet directory:
 "dist/app.exe"

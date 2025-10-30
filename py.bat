@@ -1,4 +1,4 @@
 
-rem "May take a couple minutes to open"
+rem "CNN App initializing, please wait."
 python src/cnnpy/app.py
 

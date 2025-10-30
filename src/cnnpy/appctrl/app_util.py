@@ -5,6 +5,7 @@ import tomllib
 import logging
 logger = logging.getLogger()
 #
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QMessageBox,
     QFileDialog,
@@ -95,11 +96,11 @@ class Util():
             path: file path
         """        
         try:
-            print("saveFileDialog, filters[0]: ", filters[0])
+            #print("saveFileDialog, filters[0]: ", filters[0])
         
             fileName, save_filter = QFileDialog.getSaveFileName(None, title, str(dir), filter=filters[0])
 
-            print("readParams, save_filter: ", save_filter)
+            #print("saveFileDialog, save_filter: ", save_filter)
             if fileName:    
                 full = Path(fileName)
             else:
@@ -181,6 +182,24 @@ class Util():
                 # recursive call
                 clearLayout(child.layout())
 
-    
+    @staticmethod
+    def autoCloseMessageBox(delay: int, msg: str):
+        """Special messge box that automatically closes after some delay
+
+        Args:
+            delay (int): ms time until message box closes
+            msg (str): message text
+        """
+        msgBox = QMessageBox(None)
+        msgBox.setText(msg)
+        msgBox.setWindowTitle(msg)
+        # QTimer to close message box after delay
+        timer = QTimer(msgBox)
+        timer.setSingleShot(True) 
+        timer.timeout.connect(lambda: msgBox.done(0)) 
+        # ms delay
+        timer.start(delay)  
+        msgBox.exec() 
+
 
 

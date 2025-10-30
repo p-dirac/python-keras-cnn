@@ -3,17 +3,20 @@ import os
 import logging
 logger = logging.getLogger()
 import time
+import copy
 from PySide6 import QtCore
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
     QLayout,
     QVBoxLayout,
     QHBoxLayout,
+    QFormLayout,
     QGridLayout,
     QPushButton,
     QMessageBox,
     QTableWidget, 
     QTableWidgetItem, 
+    QLineEdit,
     QLabel,
     QProgressBar,
     QWidget
@@ -21,6 +24,9 @@ from PySide6.QtWidgets import (
 import torch
 import keras
 from keras import Sequential
+from keras.src.callbacks.history import History
+from numpy import ndarray
+from sklearn.model_selection import train_test_split
 #
 from theprep.dataprep import DataPrep
 from appctrl.plotter import Plotter
@@ -34,10 +40,7 @@ from appctrl.tune_thread import TuneTask
 from appctrl.train_thread import TrainTask
 from appctrl.app_util import Util
 #
-from numpy import ndarray
-from sklearn.model_selection import train_test_split
-from keras.src.callbacks.history import History
-from PySide6.QtCore import Signal, QObject, QThreadPool
+from PySide6.QtCore import Signal, Slot, QObject, QThreadPool
 from PySide6.QtGui import QFont
 from io import StringIO
 #
@@ -95,6 +98,8 @@ class Controller(QObject):
         self.netModel = None
         # model: keras training model, set in trainPrep
         self.model = None
+        # use same seed to reproduce same results with same hyper
+        keras.utils.set_random_seed(53)
         #
         # x,y features and labels, set in dataTaskFinished
         self.x_train = None
@@ -149,6 +154,27 @@ class Controller(QObject):
         """        
         self.netModel = netModel 
 
+    def getResultDir(self):
+        self.params = self.paramsInstance.getParams()
+        if(self.params is None):
+            Util.alert("Controller: Data Params not set.")
+            return None
+        result_dir = self.params["result_dir"]
+        if (not os.path.exists(result_dir)):
+                Util.alert(f"Results directory not found: \n {result_dir}")
+                return None
+        else:
+            return result_dir
+
+    @Slot()
+    def initModelDir(self):
+        """Called when Data Params are loaded to set Results directory in netModel
+        """        
+        self.result_dir = self.getResultDir()
+        if(self.result_dir is not None):
+            self.netModel.setResultDir(self.result_dir)
+
+
     def prepTrainingData(self):
 
         """Calls DataPrep and DataTask to load the training dataset.
@@ -157,16 +183,16 @@ class Controller(QObject):
         The method dataTaskFinished is called when loading has completed, and the samples method plots a few samples to verify the data. 
         """        
         
-        print("netcontrol, prep")
+        #print("netcontrol, prep")
         self.params = self.paramsInstance.getParams()
         if(self.params is None):
             Util.alert("Controller: Data Params not set.")
             return
-        print("netcontrol, data params: ", self.params)    
+        #print("netcontrol, data params: ", self.params)    
         #
         data_dir = self.params["train_dir"]
         if (not os.path.exists(data_dir)) :
-                Util.alert("Training image directory not found: \n", data_dir)
+                Util.alert(f"Training image directory not found: \n {data_dir}")
                 return
         #
         self.updateStatus.emit("Loading training datasets")
@@ -192,7 +218,7 @@ class Controller(QObject):
         DataTask runs in a separate thread to avoid blocking the GUI.
         The method dataTaskFinished is called when loading has completed, and the samples method plots a few samples to verify the data.  
         """        
-        print("netcontrol, prepTestingData")
+        #print("netcontrol, prepTestingData")
         self.params = self.paramsInstance.getParams()
         if(self.params is None):
             Util.alert("Controller: Data Params not set.")
@@ -203,7 +229,7 @@ class Controller(QObject):
         # inside the thread
         data_dir = self.params["test_dir"]
         if (not os.path.exists(data_dir)) :
-                Util.alert("Testing image directory not found: \n", data_dir)
+                Util.alert(f"Testing image directory not found: \n {data_dir}")
                 return
         #
         self.updateStatus.emit("Loading test datasets")
@@ -229,7 +255,6 @@ class Controller(QObject):
             features (ndarray): values of images
         """  
         try:      
-            print("Controller.samples starting")
             # Canvas setup, Plotter is subclass of Qwidget
             #
             central = QWidget()
@@ -258,10 +283,9 @@ class Controller(QObject):
             # add ok button
             data_layout.addWidget(hbox)
 
-            print("Controller.samples plotting") 
+            #print("Controller.samples plotting") 
             self.updateStatus.emit("Plotting samples")
-            print("labels shape: ", labels.shape)
-            print("features shape: ", features.shape)
+            #print("labels shape: ", labels.shape)
             #
             if((labels is not None) and (features is not None)):
                 #print("Controller.samples calling plotSamples") 
@@ -307,7 +331,8 @@ class Controller(QObject):
             else:
                 # otherwise use the whole dataset
                 self.x_tune = self.x_train
-                self.y_tune = self.y_train    
+                self.y_tune = self.y_train  
+            #      
             tune_size = self.y_tune.shape[0]
             print("tune_size: ", tune_size)
             #
@@ -372,7 +397,8 @@ class Controller(QObject):
             #print("netcontrol, x_train input shape: ", in_shape)
             # access prepParams, the num_classes
             self.num_classes = self.params["num_classes"]
-            self.netModel.setInfo(in_shape, self.num_classes, self.hyper)
+            self.result_dir = self.params["result_dir"]
+            self.netModel.setInfo(in_shape, self.num_classes, self.result_dir, self.hyper)
             #
             # create keras neural network training model
             self.model = self.netModel.createModel()
@@ -680,13 +706,16 @@ class Controller(QObject):
             if(self.model is None):
                 Util.alert("Model is not loaded or prepared.")
                 return
-            self.updateStatus.emit("Prediction underway")
             #
-            self.testing = NetTesting() 
+            self.updateStatus.emit("Prediction underway")
+            # need a message box to allow updateStatus signal
+            Util.autoCloseMessageBox(1000, "Prediction underway")
+            #btn = QMessageBox.information(None, "Predict", "Prediction underway")
             # clear out old models
             self.clearKeras()
+            #
+            self.testing = NetTesting() 
             cm = self.testing.predict(self.model, self.x_test, self.y_test)
-
             #
             self.plotConfusion(cm)
         except Exception as e:
@@ -775,9 +804,12 @@ class Controller(QObject):
                 return
             #
             self.updateStatus.emit("Evaluation underway")
-            self.testing = NetTesting() 
+            # need a message box to allow updateStatus signal
+            Util.autoCloseMessageBox(1000, "Evaluation underway")
             # clear out old models
             self.clearKeras()
+            #
+            self.testing = NetTesting() 
             loss, accuracy = self.testing.evaluate(self.model, self.x_test, self.y_test)
             #
             self.evalTable(accuracy, loss)
@@ -896,7 +928,7 @@ class Controller(QObject):
         plotter = Plotter()
         # add plot to main window
         self.replaceWidget.emit(plotter)
-        print("netcontrol, plot the history accuracy, loss")
+        #print("netcontrol, plot the history accuracy, loss")
         plotter.plotHistory(hist)
 
     def plotHistoryVal(self, hist: History):
@@ -983,7 +1015,7 @@ class Controller(QObject):
         """        
         #print('TuneTask, tunetask signal: status: ', self.tune_status)
         if((self.tune_status is None) or (self.tune_status == "ok")):
-            print('TuneTask, tunetask finished')
+            print('TuneTask, tunetask finished successfully')
         elif(self.tune_status == "stop requested"):
             # Convert to table format if 'stop requested', in which
             # case tune result will be None, but midpt will be set.
@@ -1189,20 +1221,120 @@ class Controller(QObject):
             #print("gsResult", result)
             # result.best_params_: dict
             # e.g. {'batch_size': 64, 'epochs': 10, 'model__init_rate': 0.02, 'model__num_filters': 32, 'model__num_units': 700}
+            best = result.best_params_
+            score = result.best_score_
             print("Best params", result.best_params_)
             # result.best_score_: float, e.g. 0.9788996296
             print("Best score", result.best_score_)
             logger.info(f"Best params: {result.best_params_}")
             logger.info(f"Best score: {100*result.best_score_:,.2f}%")
-            #print("result means", means)
-            #print("result means", losses)
-            #print("result params", params)
-            #self.tuneTable(means, losses, params)
-            self.tuneTable(means, params)
+            self.tuneResults(means, params, best, score)
+
         else:
             print("extractTuneResults error: result is None")
             logger.error("extractTuneResults error: result is None")
             self.closeCentral()
+
+    def tuneResults(self, means: list, params: list, best: dict, score: float):
+        """Create panel to display grid search results
+
+        Args:
+            means (list): list of mean accuracy values
+            params (list): list of dict for each set of grid search parameters
+            best (dict): dict of parameters associated with best score
+            score (float): score for best parameters
+        Raises:
+            Exception: if error occurs
+        """        
+        try:
+            bestHyper = self.setBestHyper(best)
+            hyperLayout = self.bestResult(score, bestHyper)
+            #
+            btn = QMessageBox.question(
+                None,
+                "Question",
+                "Show the tuning grid?",
+            )
+            if btn == QMessageBox.Yes:
+                gridLayout = self.tuneTable(means, params)
+            else:
+                layout = QVBoxLayout()
+                self.replaceLayout.emit(layout)  
+            #
+            # need to convert from string to numeric
+            self.hyper = self.hyperInstance.hyperToNumeric(bestHyper)      
+
+        except Exception as e:
+            print(f"tuneResults raised an exception: {e}")
+            logger.error(f"tuneResults raised an exception: {str(e)}")
+            raise Exception(f"Error in tuneResults: {str(e)}")
+
+    def setBestHyper(self, subHyper: dict):
+        """Apply tuning hyper parameters to copy of current hyper object
+
+        Args:
+            subHyper (dict): tuning parameters in numeric format
+
+        Returns:
+            dict: hyper parameters in string format
+        """        
+        # init best hyper
+        bestHyper = copy.deepcopy(self.hyper)
+        # convert from numeric to string
+        # replace bestHyper with subHyper items
+        for k, v in subHyper.items():
+            if (k.startswith("model__")):
+                kk = k.replace("model__", "")
+                bestHyper[kk] = str(v)
+            else:
+                bestHyper[k] = str(v)
+        #
+        return bestHyper        
+
+
+    def bestResult(self, bestScore: float, bestHyper: dict):
+        """Display form of hyper parameters based on best tuning parameters
+
+        Args:
+            bestScore (float): Best score from tuning task
+            bestHyper (dict): Best hyper parameters from tuning task
+        """        
+        self.hyperLayout = QVBoxLayout()
+        #
+        scoreForm = QFormLayout()
+        #
+        self.score = QLineEdit()
+        self.score.setFixedWidth(600)
+        self.score.setFont(self.font)
+        self.score.setText(str(bestScore))
+        scoreForm.addRow("Best Score:", self.score)
+        #
+        # convert from numeric to string
+        hyperForm = self.hyperInstance.hyperForm(bestHyper)
+        #
+        self.scoreWij = QWidget() 
+        self.scoreWij.setLayout(scoreForm)
+        self.hyperWij = QWidget() 
+        self.hyperWij.setLayout(hyperForm)
+        #
+        # add widgets to content
+        self.hyperLayout.addWidget(self.scoreWij)
+        self.hyperLayout.addSpacing(20)
+        #
+        # Create title
+        title = QLabel("Best Grid:")
+        title.setAlignment(Qt.AlignLeft) 
+        title.setFont(self.font)
+        self.hyperLayout.addWidget(title) 
+        self.hyperLayout.addWidget(self.hyperWij)
+        # add bottom spacing
+        self.hyperLayout.addStretch(2)
+        #
+        central = QWidget()
+        self.replaceWidget.emit(central)
+        central.setLayout(self.hyperLayout)
+
+
 
     def tuneTable(self, means: list, params: list):
         """Create table to display grid search results
@@ -1210,16 +1342,12 @@ class Controller(QObject):
         Args:
             means (list): list of mean accuracy values
             params (list): list of dict for each set of grid search parameters
-
         Raises:
             Exception: if error occurs
         """        
         try:
             table = QTableWidget()
-            central = QWidget()
-            self.replaceWidget.emit(central)
             layout = QVBoxLayout()
-            central.setLayout(layout)
             # Create table title
             title = QLabel("Grid Search Results")
             title.setAlignment(Qt.AlignHCenter) 
@@ -1273,6 +1401,24 @@ class Controller(QObject):
                     # set each col value in current row
                     val = col_vals[col]
                     table.setItem(row, col, QTableWidgetItem(str(val)))
+            hbox = QWidget()
+            hlayout = QHBoxLayout(hbox)
+            hlayout.setAlignment(Qt.AlignCenter) 
+            okbtn = QPushButton("OK")
+            okbtn.setFixedWidth(200)
+            okbtn.setStyleSheet("background-color: #E0FFFF; border-radius: 5px; border-color: #DCDCDC; border-width: 2px; border-style: outset;")
+            okbtn.setFont(self.font)
+            hlayout.addWidget(okbtn)
+            #
+            layout.addWidget(hbox)
+            #
+            central = QWidget()
+            self.replaceWidget.emit(central)
+            central.setLayout(layout)
+            #
+            # connect okbtn button to function
+            okbtn.clicked.connect(self.closeCentral)
+
         except Exception as e:
             print(f"tuneTable raised an exception: {e}")
             logger.error(f"tuneTable raised an exception: {str(e)}")

@@ -4,6 +4,7 @@ from sklearn.metrics import confusion_matrix
 #
 import numpy as np
 from numpy import argmax
+from numpy import ndarray
 #
 import sys
 from io import StringIO
@@ -70,14 +71,19 @@ class NetTesting:
         try:
             # redirect stdout to memory string
             old_stdout = sys.stdout
-            #
+            # self.mystdout
             with redirect_stdout(self.mystdout):    
                 #print("predict, x_test shape: ", x_test.shape)
                 #  x_test.shape e.g. (10000, 28, 28, 1) for 10000 images
+                # pred is 2D array of probabilities 
+                # each row represents values for one image
+                # the number of columns is the number of classes
+                # each col represents the normailized probability of that col index
+                # the col index is the predicted image class
                 pred = model.predict(x_test)
                 # pred shape e.g. (10000, 10) for 10000 samples (rows) and 10 classes (cols)
-                # argmax, for axis=1, returns max element in each row
-                # y_pred shape, e.g. (10000,) array of predicted values (0 to 9)
+                # argmax, for axis=1, returns col index of max element in each row
+                # y_pred shape, e.g. (10000,) array of predicted indexes (0 to 9)
                 y_pred = np.argmax(pred, axis=1)
                 #print("predict, y_pred shape: ", y_pred.shape)
                 #
@@ -86,6 +92,12 @@ class NetTesting:
                 # cm shape e.g. (10,10) counts for each pair of true vs predicted values
                 cm = confusion_matrix(y_test, y_pred)
                 #print("predict, cm shape: ", cm.shape)
+            #    
+            # restore original stdout
+            sys.stdout = old_stdout
+            # for debugging/learning: check one prediction
+            # self.verifyOnePrediction(pred)
+            #
         except Exception as e:
             logger.error("Error in predict")
             print(f"Error in predict: {e}")
@@ -94,3 +106,24 @@ class NetTesting:
             # restore original stdout
             sys.stdout = old_stdout
             return cm
+
+    def verifyOnePrediction(self, pred: ndarray):
+        """Verify one sample from prediction matrix
+
+        Args:
+            pred (ndarray): prediction matrix, e.g. with shape (10000, 10) for 10000 samples (rows) and 10 classes (cols)
+        """        
+        # select one row from pred
+        p = pred[36, :]
+        print("sample prediction row: ", p )
+        # each col is a normalized probability of one class
+        # sum over cols in one row should = 1
+        s = np.sum(p) 
+        print("sum of sample cols = 1?: ", s )
+        # only one row, do not set axis
+        # argmax finds the col index containing the max value in that row
+        yp = np.argmax(p)
+        print("yp = index of max col?: ", yp )
+        # verify argmax: use that col index to get prob value
+        # compare with sample pred above
+        print("verify, max val at index yp?: ", p[yp])

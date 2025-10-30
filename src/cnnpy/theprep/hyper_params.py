@@ -65,6 +65,7 @@ class HyperParams(QObject):
         self.font = QFont("Arial", 14, QFont.Weight.Bold)
 
     def getHyper(self):
+
         return self.hyper
         
     def editParams(self):
@@ -213,11 +214,10 @@ class HyperParams(QObject):
 
 
     def updateParams(self):
-        #
-        #print("updateParams: ")
         # save hyper here for output file
+        # convert str to numeric
         self.hyper = self.updateHyper() 
-        print("updateParams, hyper: ", self.hyper)
+        #print("updateParams, hyper: ", self.hyper)
         #
         #logger.info('updateParams, calling emit')
         # send signal to enable menu buttons
@@ -228,6 +228,11 @@ class HyperParams(QObject):
 
         
     def updateHyper(self):
+        """From form layout, convert text to numeric values
+
+        Returns:
+            dict: hyper parameters with numeric values
+        """        
         # from learnForm
         # self.sch1.text() is in csv format
         # split creates list of items, map converts each item to float
@@ -266,6 +271,28 @@ class HyperParams(QObject):
         }
         return hyper
 
+    def hyperToNumeric(self, hype: dict):
+        """From string format, convert text to numeric values
+
+        Args:
+           hype (str): hyper parameters in string format
+        Returns:
+            dict: hyper parameters with numeric values
+        """        
+        hyper = {
+        "init_rate" : self.csvToFloat(hype["init_rate"]),
+        "decay_steps" : int(hype["decay_steps"]),
+        "decay_rate" : float(hype["decay_rate"]),
+         "kernel_size" : int(hype["kernel_size"]),
+        "num_filters" : self.csvToInt(hype["num_filters"]) ,
+        "num_units" : self.csvToInt(hype["num_units"]),
+        "momentum" : float(hype["momentum"]),
+        "drop_out" : float(hype["drop_out"]),
+        "epochs" : self.csvToInt(hype["epochs"]),
+        "batch_size" : self.csvToInt(hype["batch_size"]) 
+        }
+        return hyper
+
     def closeCentral(self):
         central = QWidget()
         self.replaceWidget.emit(central)
@@ -273,17 +300,17 @@ class HyperParams(QObject):
 
     def newParams(self):
         p = None
+        # will use default params
         self.paramsForm(p)
-
 
     def loadParams(self):
         p = self.readParams() 
         if(bool(p)):
             self.params = p
-            print("loadParams: ", p)
+            print("hyper params loaded: ", p)
+            logger.info(f"hyper params loaded: {p}")
             self.paramsForm(p) 
             self.updateStatus.emit("Hyper Params loaded") 
-            logger.info("Hyper Params loaded")
 
     def readParams(self):
         """Read parameters from file
@@ -344,7 +371,7 @@ class HyperParams(QObject):
         """
         try:
             #print("saveHyper, hyper: ", self.hyper)
-            print("saveHyper, hyper_file: ", self.hyper_file)
+            #print("saveHyper, hyper_file: ", self.hyper_file)
             full_dir = os.path.join(Path.cwd(), HyperParams.APP_INPUT_SUBDIR)
             full = Util.saveFileDialog(title="Save As .json:", filters=["JSON files (*.json);;All Files (*)"], dir=full_dir)
             print("saveHyper, full: ", full)
@@ -354,7 +381,7 @@ class HyperParams(QObject):
                     #write params dict to file in json format
                     json.dump(self.hyper, f, indent=4)
                 self.updateStatus.emit("Hyper Params saved to file") 
-                logger.info("Hyper Params saved to file")
+                logger.info(f"Hyper Params saved to file: {full}")
             else:
                 # user canceled dialog without selecting a path
                 logger.info("No path selected, hyper params not saved")

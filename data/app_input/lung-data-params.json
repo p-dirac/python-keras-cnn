@@ -2,5 +2,6 @@
     "num_classes": 4,
     "train_dir": "C:\\Datasets\\LungImages\\Data\\train",
     "test_dir": "C:\\Datasets\\LungImages\\Data\\test",
-    "image_size": 224
+    "image_size": 224,
+    "result_dir": "C:\\Results\\app_results"
 }

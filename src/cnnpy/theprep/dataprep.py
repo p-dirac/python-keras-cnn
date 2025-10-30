@@ -96,7 +96,7 @@ class DataPrep:
                 #print("loadImages folderName: ",folderName)
                 # there should be only num_classes folders
                 folder = os.path.join(image_parent_dir, folderName)
-                print("loadImages folder: ",folder)
+                #print("loadImages folder: ",folder)
                 # under dir_name, should be only image files 
                 for fileName in os.listdir(folder):
                     # need full path of each file for open function
@@ -273,17 +273,14 @@ class DataPrep:
             tuple[ndarray, ndarray, ndarray, ndarray]: training features, test features, training labels, test labels
         """
         try:
-            print("prep, runTask")
-            #
-            logger.info("DataPrep, prepData begin")
-            #
+            #print("prep, runTask")
             # load data, shuffle, and normalize
-            print("prep, image_size: ", self.image_size)
+            #print("prep, image_size: ", self.image_size)
             labels, features = self.prepData(data_dir, callback)
             #
-            logger.info("DataPrep, prepData finished")
+            logger.info(f"DataPrep, dataset loaded from: {data_dir}")
         except Exception:
-            logger.error("Error in prep runTask")
-            raise Exception("Error in prep runTask") 
+            logger.error("Error in DataPrep runTask")
+            raise Exception("Error in DataPrep runTask") 
         else:
             return  labels, features

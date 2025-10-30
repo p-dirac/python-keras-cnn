@@ -30,32 +30,49 @@ class NetModel(QObject):
     updateStatus = Signal(str)
     loadComplete = Signal()
     #
-    # app results folder, which stores result files 
-    APP_RESULTS_SUBDIR = "Results/app_results"
 
     def __init__(self):
         # must include super call for QObject, Signal
         super().__init__()
+        self.model = None
+        self.num_classes = None
+        self.result_dir = None
+        self.in_shape = None
+        self.hyper = None
 
+    def setResultDir(self, result_dir: str):
+        self.result_dir = result_dir
 
-    def setInfo(self, in_shape: tuple, num_classes: int, hyper_params: dict):
+    def setInfo(self, in_shape: tuple, num_classes: int, result_dir: str, hyper_params: dict):
         """Set various factors for specifying a neural network model
 
         Args:
             in_shape (tuple): 3D tensor (height, width, channels), which specifies the shape of a single sample
             num_classes (int): number of classes to be classified
+            result_dir (str): directory for saving model file
             hyper_params (dict): hyper parameters required to define the model
         """
         #
         # model: keras training model
         self.model = None
         self.num_classes = num_classes
+        self.result_dir = result_dir
         self.in_shape = in_shape
         self.hyper = hyper_params
         #print("setInfo, hyper: ", self.hyper)
 
     def getModel(self):
         return self.model
+
+    def getResultDir(self):
+        if(self.result_dir is None):
+            Util.alert("Controller: Results directory not set.")
+            return None
+        if (not os.path.exists(self.result_dir)):
+                Util.alert(f"Results directory not found: \n {result_dir}")
+                return None
+        else:
+            return self.result_dir
 
     def createModel(self):
         """Create new neural network model, which will be trained when model fit is called
@@ -155,24 +172,23 @@ class NetModel(QObject):
 
         """
         try:
-            cwd = Path.cwd()
-            # cwd.parents[1] for 2 levels up from current directory
-            full_dir = os.path.join(cwd.parents[1], NetModel.APP_RESULTS_SUBDIR)
-            file_path = Util.openFileDialog(title="Open .keras model file", filters=['*.keras'], dir=full_dir)
-            # Read from file and parse h5
-            print("loadModel, file_path: ", file_path)
-            # Note: file_path will be None if user cancels file dialog
-            if(file_path is not None):
-                if os.path.exists(str(file_path)):
-                    # open file for reading
-                    #with open(file_path, "r") as f:
-                    # read model from .keras file 
-                    self.model = load_model(str(file_path))
-                    self.updateStatus.emit("CNN Model loaded") 
-                    self.loadComplete.emit()    
-                else:
-                    # file does not exist
-                    Util.alert(f"Model .keras file not found: {str(file_path)}")     
+            result_dir = self.getResultDir()
+            if(result_dir is not None):
+                file_path = Util.openFileDialog(title="Open .keras model file", filters=['*.keras'], dir=result_dir)
+                # Read from file and parse h5
+                print("loadModel, file_path: ", file_path)
+                # Note: file_path will be None if user cancels file dialog
+                if(file_path is not None):
+                    if os.path.exists(str(file_path)):
+                        # open file for reading
+                        #with open(file_path, "r") as f:
+                        # read model from .keras file 
+                        self.model = load_model(str(file_path))
+                        self.updateStatus.emit("Network Model loaded") 
+                        self.loadComplete.emit()    
+                    else:
+                        # file does not exist
+                        Util.alert(f"Model .keras file not found: {str(file_path)}")     
         except Exception:
             logger.error("Error in loadModel")
             raise Exception("Error in loadModel") 
@@ -197,20 +213,19 @@ class NetModel(QObject):
 
         """
         try:
-            cwd = Path.cwd()
-            # cwd.parents[1] for 2 levels up from current directory
-            full_dir = os.path.join(cwd.parents[1], NetModel.APP_RESULTS_SUBDIR)
-            file_path = Util.openFileDialog(title="Save As .keras:", filters=['*.keras'], dir=full_dir)
-            print("saveModelToH5, file_path: ", file_path)
-            if file_path:
-                # open file for writing
-                #with open(file_path, "w") as f:
-                    #write model to file in h5 format
-                    # e.g. cnn_model.keras
-                self.model.save(str(file_path))
-            else:
-                # user canceled dialog without selecting a path
-                logger.error("No path selected, model not saved")
+            result_dir = self.getResultDir()
+            if(result_dir is not None):
+                file_path = Util.openFileDialog(title="Save As .keras:", filters=['*.keras'], dir=result_dir)
+                print("saveModelToH5, file_path: ", file_path)
+                if file_path:
+                    # open file for writing
+                    #with open(file_path, "w") as f:
+                        #write model to file in h5 format
+                        # e.g. cnn_model.keras
+                    self.model.save(str(file_path))
+                else:
+                    # user canceled dialog without selecting a path
+                    logger.error("No path selected, model not saved")
                         
         except Exception:
             logger.error("Error in saveModelToKeras")
@@ -230,15 +245,14 @@ class NetModel(QObject):
             dict : history dictionary
         """
         try:
-            cwd = Path.cwd()
-            # cwd.parents[1] for 2 levels up from current directory
-            full_dir = os.path.join(cwd.parents[1], NetModel.APP_RESULTS_SUBDIR)
-            file_path = Util.openFileDialog(title="Open JSON history file", filters=['*.json'], dir=full_dir)
-            # Read from file and parse JSON
-            # open file for reading
-            with file_path.open("r") as f:
-                # deserialize the hist_dict from file f 
-                hist_dict = json.load(f)
+            result_dir = self.getResultDir()
+            if(result_dir is not None):
+                file_path = Util.openFileDialog(title="Open JSON history file", filters=['*.json'], dir=result_dir)
+                # Read from file and parse JSON
+                # open file for reading
+                with file_path.open("r") as f:
+                    # deserialize the hist_dict from file f 
+                    hist_dict = json.load(f)
         except Exception:
             logger.error("Error in readHistory")
             raise Exception("Error in readHistory")
@@ -256,14 +270,13 @@ class NetModel(QObject):
 
         """
         try:
-            cwd = Path.cwd()
-            # cwd.parents[1] for 2 levels up from current directory
-            full_dir = os.path.join(cwd.parents[1], NetModel.APP_RESULTS_SUBDIR)
-            file_path = Util.openFileDialog(title="Save As .json:", filters=['*.json'], dir=full_dir)
-            # open file for writing
-            with file_path.open("w") as f:
-                # write model dict to file
-                json.dump(hist_dict, f, indent=4)
+            result_dir = self.getResultDir()
+            if(result_dir is not None):
+                file_path = Util.openFileDialog(title="Save As .json:", filters=['*.json'], dir=result_dir)
+                # open file for writing
+                with file_path.open("w") as f:
+                    # write model dict to file
+                    json.dump(hist_dict, f, indent=4)
         except Exception:
             logger.error("Error in saveHistory")
             raise Exception("Error in saveHistory")

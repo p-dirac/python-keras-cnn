@@ -9,13 +9,15 @@ os.environ["QT_SCALE_FACTOR"] = "1"
 # can help prevent fragmentation on GPU
 os.environ["PYTORCH_ALLOC_CONF"] = "max_split_size_mb:512"
 from pathlib import Path
-
+# for splash screen
+import resources_rc
 import logging
 logger = logging.getLogger()
 #
 import PySide6
 from PySide6.QtWidgets import (
     QApplication,
+    QSplashScreen,
     QMainWindow,
     QVBoxLayout,
     QLayout,
@@ -23,9 +25,8 @@ from PySide6.QtWidgets import (
     QStatusBar,
     QWidget
 )
-from PySide6.QtGui import QFont
-from PySide6.QtGui import QAction
-from PySide6.QtCore import Signal, Slot
+from PySide6.QtGui import QFont, QPixmap, QAction
+from PySide6.QtCore import Qt, Signal, Slot, QTimer
 #
 from appctrl.about_dialog import AboutDialog
 from appctrl.tutor_dialog import TutorDialog
@@ -48,8 +49,6 @@ class AppWin(QMainWindow):
     # need QWIDGETSIZE_MAX to allow window resizing
     QWIDGETSIZE_MAX = 16777215
     #
-    # app results folder, which stores result files 
-    APP_RESULTS_SUBDIR = "Results/app_results"
     #
     def __init__(self):
         """Initialize the application
@@ -66,7 +65,36 @@ class AppWin(QMainWindow):
         """        
         super().__init__()
         #
-        print("AppWin initializing")
+        # QTimer did not help to show splash screen
+        #QTimer.singleShot(100, self.initGui)
+        #
+        self.initGui()
+        print("CNN App ready")
+
+    def initGui(self):
+        #
+        # set size and font
+        self.initWin()
+        #
+        # set torch with gpu or cpu
+        self.initTorch()
+        #
+        # set file logger
+        # don't log during startup, since writing to file may 
+        # slow down startup process
+        self.initLogger()
+        #
+        # setup signal connections
+        self.connections()
+        #
+        # create menu bar, status bar
+        self.createBars()
+        #
+        # initialize central widget
+        self.createCentral()
+
+    def initWin(self):
+        #print("AppWin initializing")
         title = "CNN App"
         self.setFont(AppWin.font)
         self.setWindowTitle(title)
@@ -77,30 +105,22 @@ class AppWin(QMainWindow):
         # To allow resizing
         self.setFixedSize(AppWin.QWIDGETSIZE_MAX, AppWin.QWIDGETSIZE_MAX) 
         #
-        version = Util.appVersion()
-        print("app version:", version)        
-        #
+        #version = Util.appVersion()
+        #print("app version:", version)        
+
+
+    def initTorch(self):
         # set gpu if available
         if torch.cuda.is_available():
             device = torch.device("cuda")
-            print(f"Using GPU: {torch.cuda.get_device_name(0)}")
+            #print(f"Using GPU: {torch.cuda.get_device_name(0)}")
         else:
             device = torch.device("cpu")
-            print("No GPU available, using CPU.")
+            #print("No GPU available, using CPU.")
         #
-        print("torch.device: ", device)
+        #print("torch.device: ", device)
         torch.set_default_device(device)
-        # initialize the file logger
-        self.initLogger()
-        #
-        #
-        self.connections()
-        #
-        # create menu bar, status bar
-        self.createBars()
-        #
-        # initialize central widget
-        self.createCentral()
+
 
     def initLogger(self):
         """Initialize logger with file handler
@@ -176,6 +196,7 @@ class AppWin(QMainWindow):
         self.netcontrol.setDataParams(self.dataParams)
         # after data params has been loaded, allow hyper params to be loaded 
         self.dataParams.dataIsSet.connect(self.updateHyper) 
+        self.dataParams.dataIsSet.connect(self.netcontrol.initModelDir) 
         self.dataParams.updateStatus.connect(self.setStatus)  
         self.dataParams.replaceLayout.connect(self.replaceCentralLayout) 
         self.dataParams.replaceWidget.connect(self.replaceCentralWidget) 
@@ -197,8 +218,8 @@ class AppWin(QMainWindow):
         return self.netcontrol
 
     def createAppMenu(self):
-        print("App createAppMenu")
-        logger.info('App createAppMenu')
+        #print("App createAppMenu")
+        #logger.info('App createAppMenu')
         appMenu = QMenu("App", self)
         self.mbar.addMenu(appMenu)
         appMenu.setFont(AppWin.font)
@@ -274,8 +295,8 @@ class AppWin(QMainWindow):
         appMenu.addAction("&Exit", self.close)
 
     def createTaskMenu(self):
-        print("App createTaskMenu")
-        logger.info('App createTaskMenu')
+        #print("App createTaskMenu")
+        #logger.info('App createTaskMenu')
         tasks = QMenu("Tasks", self)
         self.mbar.addMenu(tasks)
         tasks.setFont(AppWin.font)
@@ -465,43 +486,64 @@ class AppWin(QMainWindow):
             if not self.centralWidget.children():
                 Util.alert("Widget is empty.")
                 return
+            # get window image    
             pixmap = self.centralWidget.grab() 
             if(pixmap.isNull()):
                 Util.alert("Widget is not set.")
                 return
             #
-            cwd = Path.cwd()
-            # cwd.parents[0] for 1 levels up from current directory
-            # cwd.parents[1] for 2 levels up from current directory
-            full_dir = os.path.join(cwd.parents[1], AppWin.APP_RESULTS_SUBDIR)
-            full = Util.saveFileDialog(title="Save Screen as .png:", filters=["PNG files (*.png);;All Files (*)"], dir=full_dir)
-            print("saveWidget, full: ", full)
-            if full:
-                # Save the QPixmap to a file
-                if pixmap.save(str(full), "PNG"):
-                    print(f"widget saved to {full}")
+            result_dir = self.netcontrol.getResultDir()
+            if(result_dir is not None):
+                full = Util.saveFileDialog(title="Save Window as .png:", filters=["PNG files (*.png);;All Files (*)"], dir=result_dir)
+                print("saveWidget, full: ", full)
+                if full:
+                    # Save the QPixmap to a file
+                    if pixmap.save(str(full), "PNG"):
+                        print(f"widget saved to {full}")
+                    else:
+                        print("Failed to save widget.")
                 else:
-                    print("Failed to save widget.")
-            else:
-                # user canceled dialog without selecting a path
-                logger.error("No path selected, widget not saved")
+                    # user canceled dialog without selecting a path
+                    logger.error("No path selected, widget not saved")
 
         except Exception as e:
             logger.error(f"Error in saveWidget: {str(e)}")
             print(f"Error in saveWidget: {e}")
             raise Exception("Error in saveWidget") 
 
+def initSplash(app):
+    pixmap = QPixmap(":/icons/logo.png")
+    if pixmap.isNull():
+        print("Splash screen image not loaded.")
+    else:    
+        splash = QSplashScreen(pixmap, Qt.WindowStaysOnTopHint)
+        splash.show()
+        app.processEvents()
+        splash.showMessage("CNN App loading modules...", Qt.AlignTop | Qt.AlignHCenter)
+
+    # need modal dialog to allow splash screen to load ??
+    Util.autoCloseMessageBox(2000, "Loading")
+    return splash
+
+
 # Note, main is defined outside of class
 def main():
-    print("app main starting")
-    print(sys.path)
+    #print("app main starting")
+    #print(sys.path)
     # app with no command line args
     app = QApplication([])
-
+    #
+    # don't need splash ??
+    # app opens quickly without printing or logging
+    splash = initSplash(app)
+    #
     # AppWin: subclass of QMainWindow for menu, toolbar, status
-    win = AppWin()
+    win = AppWin()  
     win.show()
     #
+    if(splash is not None):
+        splash.finish(win)
+    
     # begin event loop
     app.exec()
 

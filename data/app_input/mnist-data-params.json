@@ -1,6 +1,7 @@
 {
-	"num_classes": 10,
-	"train_dir": "C:\\Datasets\\mnist_png\\training",
-	"test_dir": "C:\\Datasets\\mnist_png\\testing",
-	"image_size": 28
+    "num_classes": 10,
+    "train_dir": "C:\\Datasets\\mnist_png\\training",
+    "test_dir": "C:\\Datasets\\mnist_png\\testing",
+    "image_size": 28,
+    "result_dir": "C:\\Results\\app_results"
 }

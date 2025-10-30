@@ -186,8 +186,6 @@ class Plotter(FigureCanvas):
             # Draw the canvas; 
             # recall: self is subclass of FigureCanvas
             self.fig.canvas.draw()
-            #self.draw()
-            #print("plotConfusion, end plot")
         except Exception as e:
             logger.error(f"Error in plotConfusion: {e}")
             print(f"Error in plotConfusion: {e}")

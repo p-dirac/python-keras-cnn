@@ -115,8 +115,8 @@ class TuneTask(QRunnable):
         # some require a name prefix of "model__"
         self.tuning_params = self.setPrefix(hyper)
         #
-        print("TuneTask, tuning_params: ", self.tuning_params)
-        logger.info(f"TuneTask, tuning_params: {self.tuning_params}")
+        #print("TuneTask, tuning_params: ", self.tuning_params)
+        #logger.info(f"TuneTask, tuning_params: {self.tuning_params}")
         # total samples in tune dataset
         self.tuneSamples = self.y_train.shape[0]
         # cv = 5 is known for good results, but to speed up the process, use cv = 3
@@ -308,11 +308,11 @@ class TuneTask(QRunnable):
             #
             #Note: batch_size and epochs are internal to KerasClassifier, but the 
             # other hyper parameters must be args to the tuningModel
-            print('TuneTask, begins')
-            print("run, tuning_params: ", self.tuning_params)
+            #print('TuneTask, begins')
+            print("tune, tuning_params: ", self.tuning_params)
             logger.info(f"tuning_params: {self.tuning_params}")
-            print("run, x_train.shape: ", self.x_train.shape)
-            print("run, y_train.shape: ", self.y_train.shape)
+            print("tune, x_train.shape: ", self.x_train.shape)
+            print("tune, y_train.shape: ", self.y_train.shape)
             # Check if the static method is callable
             #is_callable = callable(TuneTask.createTuningModel)
             #print(f"Is createTuningModel callable? {is_callable}")
@@ -343,7 +343,7 @@ class TuneTask(QRunnable):
                 gs = GridSearchCV(
                     estimator=esti, param_grid=self.tuning_params, scoring=myscoring, refit="accuracy", cv=self.cv, n_jobs = 1, error_score="raise", verbose = 2)
                 #
-                print('TuneTask, run, gs.fit begins')
+                #print('TuneTask, run, gs.fit begins')
                 #
                 self.gsResult = gs.fit(self.x_train, self.y_train )
             #
