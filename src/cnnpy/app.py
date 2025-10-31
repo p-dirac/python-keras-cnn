@@ -53,7 +53,7 @@ class AppWin(QMainWindow):
     QWIDGETSIZE_MAX = 16777215
     #
     #
-    def __init__(self, app):
+    def __init__(self):
         """Initialize the application
 
         Set window size, and allow rezing.
@@ -542,7 +542,7 @@ def main():
     #splash = initSplash(app)
     #
     # AppWin: subclass of QMainWindow for menu, toolbar, status
-    win = AppWin(app)  
+    win = AppWin()  
     win.show()
     #
     #if(splash is not None):

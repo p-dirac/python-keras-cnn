@@ -1227,7 +1227,7 @@ class Controller(QObject):
             # result.best_score_: float, e.g. 0.9788996296
             print("Best score", result.best_score_)
             logger.info(f"Best params: {result.best_params_}")
-            logger.info(f"Best score: {100*result.best_score_:,.2f}%")
+            logger.info(f"Best score: {100*result.best_score_:.2f}%")
             self.tuneResults(means, params, best, score)
 
         else:
@@ -1308,7 +1308,7 @@ class Controller(QObject):
         self.score = QLineEdit()
         self.score.setFixedWidth(600)
         self.score.setFont(self.font)
-        self.score.setText(str(bestScore))
+        self.score.setText(f"{100*bestScore:.2f}%")
         scoreForm.addRow("Best Score:", self.score)
         #
         # convert from numeric to string

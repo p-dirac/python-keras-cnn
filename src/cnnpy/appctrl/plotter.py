@@ -232,6 +232,7 @@ class Plotter(FigureCanvas):
             # where xe = epochs, yh = accuracy, label for legend
             # history dictionary contains two lists: accuracy, loss             
             yh = history['accuracy']
+            # convert to percent
             yhp = [round(y*100,1) for y in yh]
             # number of epochs is length of accuracy list
             s = len(yh)
@@ -311,6 +312,7 @@ class Plotter(FigureCanvas):
             # history dictionary contains four lists: accuracy, val_accuracy, loss, val_loss 
             yh = history['accuracy']
             yv = history['val_accuracy']
+            # convert to percent
             yhp = [round(y*100,1) for y in yh]
             yvp = [round(y*100,1) for y in yv]
             # number of epochs is length of accuracy list
