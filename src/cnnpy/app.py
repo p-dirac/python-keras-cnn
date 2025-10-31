@@ -14,6 +14,9 @@ import resources_rc
 import logging
 logger = logging.getLogger()
 #
+import cProfile 
+from pstats import SortKey, Stats
+#
 import PySide6
 from PySide6.QtWidgets import (
     QApplication,
@@ -50,7 +53,7 @@ class AppWin(QMainWindow):
     QWIDGETSIZE_MAX = 16777215
     #
     #
-    def __init__(self):
+    def __init__(self, app):
         """Initialize the application
 
         Set window size, and allow rezing.
@@ -514,6 +517,7 @@ class AppWin(QMainWindow):
 def initSplash(app):
     pixmap = QPixmap(":/icons/logo.png")
     if pixmap.isNull():
+        splash = None
         print("Splash screen image not loaded.")
     else:    
         splash = QSplashScreen(pixmap, Qt.WindowStaysOnTopHint)
@@ -522,7 +526,7 @@ def initSplash(app):
         splash.showMessage("CNN App loading modules...", Qt.AlignTop | Qt.AlignHCenter)
 
     # need modal dialog to allow splash screen to load ??
-    Util.autoCloseMessageBox(2000, "Loading")
+    Util.autoCloseMessageBox(300, "Loading")
     return splash
 
 
@@ -533,19 +537,20 @@ def main():
     # app with no command line args
     app = QApplication([])
     #
-    # don't need splash ??
-    # app opens quickly without printing or logging
-    splash = initSplash(app)
+    # need splash, too slow ??
+    # app opens quickly without much printing or logging
+    #splash = initSplash(app)
     #
     # AppWin: subclass of QMainWindow for menu, toolbar, status
-    win = AppWin()  
+    win = AppWin(app)  
     win.show()
     #
-    if(splash is not None):
-        splash.finish(win)
+    #if(splash is not None):
+    #    splash.finish(win)
     
     # begin event loop
     app.exec()
 
 if __name__ == "__main__":
     main()
+   #cProfile.run('main()')
