@@ -8,7 +8,8 @@ fitting the Keras network model. Matplotlib is employed to make plots
 of accuracy, loss, confusion matrix, and sample dataset images. 
 Gridsearchcv allows optimizaton across combinations of hyper-parameters.
 Long running tasks are delegated to threads, with signal feedback to
-update GUI progess bars.
+update GUI progess bars. If CUDA is available, a GPU will speed up model
+fitting.
 
 Read the project description in Python-Keras-CNN.pdf found in the
 docs folder.
